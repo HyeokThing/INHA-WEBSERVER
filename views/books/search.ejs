@@ -10,6 +10,11 @@
             </form>
         </div>
         <div id="div_books"></div>
+        <div class="text-center">
+            <button id="prev" class="btn btn-primary">이전</button>
+            <span id="span_page" class="mx-3">1/10</span>
+            <button id="next" class="btn btn-primary">다음</button>
+        </div>
     </div>
 </div>
 
@@ -18,9 +23,9 @@
     <table class="table table-striped">
         {{#each documents}}
             <tr>
-                <td><img src="{{thumbnail}}" width="50"></td>
+                <td><img src="{{check thumbnail}}" width="50"></td>
                 <td>{{title}}</td>
-                <td>{{price}}</td>
+                <td>{{format price}}</td>
                 <td>{{authors}}</td>
             </tr>
         {{/each}}
@@ -28,12 +33,37 @@
 </script>
 
 <script>
-    let query=$(frm.query).val();
-    getBooks();
+    Handlebars.registerHelper("check", function(thumbnail){
+        if(thumbnail){
+            return thumbnail;
+        }else{
+            return "http://via.placeholder.com/120x170";
+        }
+    });
 
+    Handlebars.registerHelper("format", function(price){
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '원';
+    });
+</script>
+
+<script>
+    let query=$(frm.query).val();
+    let page=1;
+    getBooks();
+    
     $(frm).on("submit", function(e){
-        e.preventDefault(); //submit 이벤트를 막아준다.
+        e.preventDefault(); //submit 이벤트 방지
         query=$(frm.query).val();
+        getBooks();
+    });
+
+    $("#next").on("click", function(){
+        page++;
+        getBooks();
+    });
+
+    $("#prev").on("click", function(){
+        page--;
         getBooks();
     });
     
@@ -43,11 +73,20 @@
             type:"get",
             url:"https://dapi.kakao.com/v3/search/book?target=title",
             headers:{"Authorization": "KakaoAK cd2fc8be4bd401f421634778bba9fcee"},
-            data:{query:query, page:1, size:5},
+            data:{query:query, page:page, size:6},
             success:function(data){
                 console.log(data);
-                let temp = Handlebars.compile($("#temp_books").html());
+                let temp=Handlebars.compile($("#temp_books").html());
                 $("#div_books").html(temp(data));
+
+                let last=Math.ceil(data.meta.pageable_count/6);
+                $("#span_page").html(page+"/"+last);
+
+                if(page==1)$("#prev").attr("disabled",true)
+                else $("#prev").attr("disabled", false);
+
+                if(data.meta.is_end)$("#next").attr("disabled",true)
+                else $("#next").attr("disabled",false);
             }
         });
     }

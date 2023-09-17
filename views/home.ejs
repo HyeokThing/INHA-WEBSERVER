@@ -1,5 +1,98 @@
 <div class="row my-5">
     <div class="col">
-        <h1 class="text-center">홈페이지입니다...</h1>
+        <!-- 검색폼 -->
+        <div class="row mb-2 justify-content-end">
+            <form name="frm" class="col-6 col-md-4 col-lg-3">
+                <div class="input-group">
+                    <input class="form-control" name="query" value="자바">
+                    <button class="btn btn-primary">검색</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 도서검색결과 -->
+        <div id="div_books" class="row"></div>
+
+        <!-- <h1 class="text-center">홈페이지</h1> -->
+        <!-- 페이지 이동 버튼 -->
+        <div class="text-center">
+            <button id="prev" class="btn btn-primary">이전</button>
+            <span id="span_page" class="mx-3">1/10</span>
+            <button id="next" class="btn btn-primary">다음</button>
+        </div>
     </div>
 </div>
+
+<!-- 도서검색 템플릿 -->
+<script type="x-handlebars-template" id="temp_books">
+    {{#each documents}}
+        <div class="col-6 col-md-4 col-lg-2 mb-3">
+            <div class="card">
+                <div class="card-body">
+            <img src="{{check thumbnail}}" width="90%">
+            <div class="ellipsis pt-3" style="font-size:0.8rem">{{title}}</div>
+        </div>
+        <div class="card-footer" style="font-size:0.8rem">{{format price}}</div>
+        </div>
+    </div>
+    {{/each}}
+</script>
+
+<script>
+    Handlebars.registerHelper("check", function(thumbnail){
+        if(thumbnail){
+            return thumbnail;
+        }else{
+            return "http://via.placeholder.com/120x170";
+        }
+    });
+
+    Handlebars.registerHelper("format", function(price){
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '원';
+    });
+</script>
+
+<script>
+    let query=$(frm.query).val();
+    let page=1;
+    getBooks();
+    
+    $(frm).on("submit",function(e){
+        e.preventDefault();
+        query=$(frm.query).val();
+        page=1;
+        getBooks();
+    });
+    
+    $("#next").on("click", function(){
+        page++;
+        getBooks();
+    });
+
+    $("#prev").on("click", function(){
+        page--;
+        getBooks();
+    });
+
+    function getBooks(){
+        $.ajax({
+            type:"get",
+            url:"https://dapi.kakao.com/v3/search/book?target=title",
+            headers:{"Authorization":"KakaoAK c3b69d06eabdc1be6286cd64cb630224"},
+            data:{query:query, page:page,size:6},
+            success:function(result){
+                console.log(result);
+                let temp=Handlebars.compile($("#temp_books").html())
+                $("#div_books").html(temp(result));
+                let last=Math.ceil(result.meta.pageable_count/6);
+                $("#span_page").html(page+"/"+last);
+
+                if(page==1)$("#prev").attr("disabled",true)
+                else $("#prev").attr("disabled", false);
+
+                if(result.meta.is_end)$("#next").attr("disabled",true)
+                else $("#next").attr("disabled",false);
+            }
+        });
+    }
+</script>
