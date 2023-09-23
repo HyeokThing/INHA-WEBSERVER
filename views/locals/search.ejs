@@ -1,0 +1,108 @@
+<div class="row">
+    <div class="col">
+        <h1 class="text-center">지역검색</h1>
+
+        <div class="row mb-2 justify-content-end">
+            <form name="frm" class="col-6 col-md-4 col-lg-3">
+                <div class="input-group">
+                    <input class="form-control" name="query" value="인하대학교">
+                    <button class="btn btn-primary">검색</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="div_locals"></div>
+
+        <div class="text-center">
+            <button id="prev" class="btn btn-primary">이전</button>
+            <span id="span_page" class="mx-3">1/10</span>
+            <button id="next" class="btn btn-primary">다음</button>
+        </div>
+
+        <!--지도출력-->
+        <div id="map" style="width:100%;height:400px;" class="my-5"></div>
+
+    </div>
+</div>
+
+<!--템플릿-->
+<script type="x-handlebars-template" id="temp_locals">
+    <table class="table table-striped">
+        {{#each documents}}
+            <tr>
+                <td>{{place_name}}</td>
+                <td>{{address_name}}</td>
+                <td>{{phone}}</td>
+                <td>
+                    <button class="btn btn-primary" x="{{x}}" y="{{y}}">위치보기</button>
+                </td>
+            </tr>
+        {{/each}}
+   </table>
+</script>
+
+
+<script>
+    let query=$(frm.query).val();
+    let page=1;
+    let size=5;
+
+    getLocals();
+
+    $("#div_locals").on("click", "button", function(){
+        let x=$(this).attr("x");
+        let y=$(this).attr("y");
+
+        var container = document.getElementById('map');
+		var options = {
+			center: new kakao.maps.LatLng(y, x),
+			level: 3
+		};
+		var map = new kakao.maps.Map(container, options);
+        var markerPosition  = new kakao.maps.LatLng(y, x);  // 마커가 표시될 위치입니다 
+        var marker = new kakao.maps.Marker({  // 마커를 생성합니다
+            position: markerPosition
+        });
+        marker.setMap(map);  // 마커가 지도 위에 표시되도록 설정합니다
+
+    });
+
+    $(frm).on("submit", function(e){
+        e.preventDefault(); //submit 이벤트 방지
+        query=$(frm.query).val();
+        page=1;
+        getLocals();
+    });
+
+    $("#prev").on("click", function(){
+        page--;
+        getLocals();
+    });
+
+    $("#next").on("click", function(){
+        page++;
+        getLocals();
+    });
+
+    function getLocals(){
+        $.ajax({
+            type:"get",
+            url:"https://dapi.kakao.com/v2/local/search/keyword.json",
+            headers:{"Authorization": "KakaoAK cd2fc8be4bd401f421634778bba9fcee"},
+            data:{query:query, page:page, size:size},
+            success:function(data){
+                let temp = Handlebars.compile($("#temp_locals").html());
+                $("#div_locals").html(temp(data));
+
+                let last = Math.ceil(data.meta.pageable_count/size);
+                $("#span_page").html(page + "/" + last);
+
+                if(page==1) $("#prev").attr("disabled", true); // 첫 페이지 일때 버튼 비활성화
+                else $("#prev").attr("disabled", false);
+
+                if(data.meta.is_end) $("#next").attr("disabled", true); // 마지막 페이지 일때 버튼 비활성화
+                else $("#next").attr("disabled", false);
+            }
+        })
+    }
+</script>
