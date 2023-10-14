@@ -48,7 +48,7 @@
                 </div>
                 <div class="card-footer" style="font-size:0.8rem">
                     {{format price}}
-                    <i class="bi bi-cart-check float-end" book="{{book @this}}"></i>
+                    <i class="cart bi bi-cart float-end" book="{{book @this}}"></i>
                 </div>
             </div>
         </div>
@@ -76,20 +76,41 @@
 </script>
 
 
-<script>
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getDatabase, ref, set, get } 
+        from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    const db=getDatabase(app);
+
     let query=$(frm.query).val();
     let page=1;
 
     getBooks();
 
-     //장바구니를 클릭한경우
-     $("#div_books").on("click", ".bi-cart-check", function(){
+    // 장바구니 아이콘을 클릭한 경우
+    $("#div_books").on("click", ".cart", async function(){
         if(!sessionStorage.getItem("email")){
+            alert("로그인을 해주세요.");
             location.href="/users/login";
-        }else{
-            //장바구니에 등록하는 작업
-            const book=JSON.parse($(this).attr("book"));
-            console.log(book);
+            return;
+        }
+        //장바구니에 이미 있는 도서인지 체크
+        const book=JSON.parse($(this).attr("book"));
+
+        const ref_cart=ref(db, `cart/${sessionStorage.getItem("uid")}/${book.isbn}`);
+
+        const result = await get(ref_cart); // get은 비동기 함수이기 때문에 다 읽어오기까지 기다려줌.
+        console.log(result.val())    
+        
+        if(result.val())
+        {
+            alert("이미 장바구니에 있습니다.");
+        }
+        else
+        {
+            if(!confirm("장바구니에 추가하실건가요?")) return;
+            set(ref_cart, book);
+            alert("장바구니에 추가되었습니다.");
         }
     });
     

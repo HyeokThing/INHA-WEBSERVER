@@ -1,0 +1,99 @@
+<div class="my-5">
+    <h1 class="'text-center mb-5">장바구니</h1>
+    <div id="div_cart"></div>
+</div>
+
+
+<script id="temp_cart" type="x-handlebars-template">
+    <table class="table">
+        <tr>
+            <td colspan="7">
+                <input type="checkbox" id="all">
+                <button class="btn btn-warning btn-sm ms-3">선택삭제</button>
+            </td>
+        </tr>
+        {{#each .}}
+            <tr>
+                <td><input type="checkbox" class="chk"></td>
+                <td><img src="{{thumbnail}}" width="30"></td>
+                <td>{{title}}</td>
+                <td>{{authors}}</td>
+                <td>{{price}}</td>
+                <td>{{publisher}}</td>
+                <td><button class="btn btn-danger btn-sm" isbn="{{isbn}}">삭제</button></td>
+            </tr>
+        {{/each}}
+    </table>
+</script>
+
+
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getDatabase, ref, onValue, remove } 
+        from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    const db=getDatabase(app);
+
+    // 선택삭제 버튼을 클릭한 경우
+    $("#div_cart").on("click", ".btn-warning", function(){
+        const chk=$("#div_cart .chk:checked").length;
+        if(chk==0)
+        {
+            alert("삭제할 도서를 선택해주세요.");
+        }
+        else
+        {
+            if(!confirm(chk + "개 도서를 삭제하시겠습니까?")) return;
+
+            //도서삭제
+            $("#div_cart .chk:checked").each(item=>{
+                // 다음시간 - 여기서부터 삭제 반복하면 됩니다~ 
+            });
+        }
+    });
+
+    // 전체 체크박스를 클릭한 경우
+    $("#div_cart").on("click", "#all", function(){
+        if($(this).is(":checked"))
+        {
+            $("#div_cart .chk").prop("checked", true);
+        }
+        else
+        {
+            $("#div_cart .chk").prop("checked", false);
+        }
+    });
+
+    // 각행의 체크박스를 클릭한 경우
+    $("#div_cart").on("click", ".chk", function(){
+        const all=$("#div_cart .chk").length;
+        const chk=$("#div_cart .chk:checked").length;
+        if(all==chk)
+        {
+            $("#div_cart #all").prop("checked", true);
+        }
+        else
+        {
+            $("#div_cart #all").prop("checked", false);
+        }
+    });
+
+    // 장바구니 도서목록
+    const ref_cart=ref(db, `cart/${sessionStorage.getItem("uid")}`);
+    onValue(ref_cart, result=>{
+        let items=[];
+        result.forEach(item=>{
+            items.push(item.val());
+        });
+        const temp=Handlebars.compile($("#temp_cart").html());
+        $("#div_cart").html(temp(items));
+    })
+
+    //삭제버튼을 클릭한 경우
+    $("#div_cart").on("click", ".btn-danger", function(){
+        const isbn=$(this).attr("isbn");
+        if(!confirm(`${isbn} 삭제하실래요?`)) return;
+        const ref_cart = ref(db, `cart/${sessionStorage.getItem("uid")}/${isbn}`);
+        remove(ref_cart);
+        alert("삭제되었습니다.");
+    });
+</script>
