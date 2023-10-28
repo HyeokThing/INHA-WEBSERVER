@@ -1,0 +1,46 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">즐겨찾기</h1>
+    <div id="div_favorite"></div>
+</div>
+
+<script id="temp_favorite" type="x-handlebars-template">
+    <table class="table table-striped table-hover">
+        {{#each .}}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{place_name}}</td>
+            <td>{{phone}}</td>
+            <td>{{address_name}}</td>
+            <td><button class="btn btn-danger btn-sm" id="{{id}}">삭제</button></td>
+        </tr>
+        {{/each}}
+    </table>
+</script>
+
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    const db=getDatabase(app);
+
+    const ref_favorite=ref(db, `favorite/${sessionStorage.getItem("uid")}`);
+    onValue(ref_favorite, result=>{
+        let items=[];
+        result.forEach(item=>{
+            items.push(item.val());
+        });
+        console.log(items);
+        const temp = Handlebars.compile($("#temp_favorite").html());
+        $("#div_favorite").html(temp(items));
+    });
+
+    // 삭제버튼을 누른경우
+    $("#div_favorite").on("click", ".btn-danger", async function(){
+        const id=$(this).attr("id");
+        if(confirm(`${id}번 즐겨찾기를 삭제하시겠습니까?`))
+        {
+            const ref_favorite = ref(db, `favorite/${sessionStorage.getItem("uid")}/${id}`);
+            await remove(ref_favorite);
+            alert("삭제완료");
+        }
+    });
+</script>
