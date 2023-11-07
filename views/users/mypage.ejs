@@ -1,0 +1,136 @@
+<style>
+    #photo{
+        border-radius: 50%;
+        border: 1px solid gray;
+        cursor: pointer;
+        width :200px;
+    }
+    #file{
+        display: none;
+    }
+</style>
+
+
+<div class="my-5">
+    <h1 class="text-center mb-5"><%=title%></h1>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="text-center my-3">
+            <div>
+                <img id="photo" src="http://via.placeholder.com/200x200">
+                <input id="file" type="file">
+            </div>
+            <div>
+                <button id="btn-photo" class="btn btn-primary px-5 mt-2" type="button">
+                    이미지 변경
+                </button>
+            </div>
+        </div>
+        <form name="frm" class="card p-3">
+
+            <div class="input-group mb-2">
+                <span class="input-group-text">이름</span>
+                <input name="name" class="form-control"> 
+            </div>
+
+            <div class="input-group mb-2">
+                <span class="input-group-text">전화</span>
+                <input name="phone" class="form-control"> 
+            </div>
+
+            <div class="input-group mb-2">
+                <span class="input-group-text">주소</span>
+                <input name="address" class="form-control" readonly>
+                <button type="button" id="btn-search" class="btn btn-primary">검색</button>
+            </div>
+            <div class="text-center mt-3">
+                <button type="submit" class="btn btn-primary px-5">저장</button>
+                <button type="reset" class="btn btn-secondary px-5">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getFirestore, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    import { getStorage, uploadBytes, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-storage.js";
+    const db = getFirestore(app);
+    const storage=getStorage(app);
+    const uid=sessionStorage.getItem("uid");
+    const email=sessionStorage.getItem("email");
+    
+    let user;
+    $(window).on("load", async function(){
+        const snapshot=await getDoc(doc(db, `users/${uid}`));
+        user=snapshot.data();
+
+        $(frm.name).val(user.name);
+        $(frm.phone).val(user.phone);
+        $(frm.address).val(user.address);
+        $("#photo").attr("src", user.photo ? user.photo : "http://via.placeholder.com/200x200");
+    });
+
+    $("#photo").on("click", function(e){
+        $("#file").click();
+    });
+
+    $("#file").on("change", function(e){
+        $("#photo").attr("src", URL.createObjectURL(e.target.files[0]))
+    });
+
+    $("#btn-photo").on("click", async function(){
+        if($("#file").val()==""){
+            alert("변경할 이미지를 선택하세요.");
+        }else{
+            if(confirm("변경된 이미지로 저장하시겠습니까?")){
+                const snapshot=await uploadBytes(ref(storage, `/photo/${Date.now() + ".jpg"}`), $("#file")[0].files[0]);
+                const url=await getDownloadURL(snapshot.ref);
+                await setDoc(doc(db, `users/${uid}`), {...user, photo:url});
+                alert("이미지가 변경되었습니다!");
+            }
+        }
+    })
+
+    $("#btn-search").on("click", function(){
+        new daum.Postcode({
+            oncomplete:function(data){
+                //console.log(data);
+                const address=data.address;
+                const building = data.buildingName ? `(${data.buildingName})` : '';
+                $(frm.address).val(address + building);
+            }
+        }).open();
+    });
+
+    $(frm).on("submit", async function(e){
+        e.preventDefault();
+        const name=$(frm.name).val();
+        const phone=$(frm.phone).val();
+        const address=$(frm.address).val();
+
+        if(name==""){
+            alert("이름을 입력하세요.");
+            $(frm.name).focus();
+            return;
+        }
+        if(phone==""){
+            alert("전화번호를 입력하세요.");
+            $(frm.phone).focus();
+            return;
+        }
+        if(address==""){
+            alert("주소를 입력하세요.");
+            $(frm.address).focus();
+            return;
+        }
+        if(confirm("사용자 정보를 저장하시겠습니까?")){
+            await setDoc(doc(db, `users/${uid}`), {
+                email, name, phone, address
+            });
+            alert("사용자 정보를 성공적으로 저장하였습니다.");
+            location.href="/";
+        }
+    });
+</script>
