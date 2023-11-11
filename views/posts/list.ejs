@@ -1,0 +1,99 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">게시판</h1>
+    <div class="row">
+        <div class="col pt-3">
+            게시글수 : <span id="total"></span>
+        </div>
+        <div class="col text-end mb-5">
+            <button id="btn_insert" class="btn btn-primary">글쓰기</button>
+        </div>
+
+        <hr>
+        
+        <div id="div_posts"></div>
+        <div id="pagination" class="text-center">
+            <button id="btn_prev" class="btn btn-primary">이전</button>
+            <span id="span_page" class="mx-3">1/10</span>
+            <button id="btn_next" class="btn btn-primary">다음</button>
+        </div>
+    </div>
+</div>
+
+<script id="temp_posts" type="x-handlebars-templates">
+    <table class="table">
+    {{#each .}}
+        <tr>
+            <td>{{title}}</td>
+            <td>{{email}}</td>
+            <td>{{date}}</td>
+        </tr>    
+    {{/each}}
+    </table>
+</script>
+
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getFirestore,collection } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    import { query,orderBy,getDocs,where,doc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    const db = getFirestore(app);
+    const email=sessionStorage.getItem('email');
+    let page=1;
+    let last=1;
+    let size=5;
+
+    //게시글 목록
+    getPosts();
+    
+    async function getPosts() {
+        const q = query(collection(db, 'posts'), orderBy("date", "desc"));
+        const snapshot = await getDocs(q);
+        let rows=[];
+        let total=snapshot.docs.length;
+        last = Math.ceil(total/size);
+        $("#total").html(total);
+        
+        await snapshot.docs.forEach(async(row, index)=>{
+            const start = (page-1)*size;
+            const end = (page*size)-1;
+            if(index>=start && index<=end){
+                rows.push({id:row.id, ...row.data()});
+            }
+        });
+        const temp=Handlebars.compile($("#temp_posts").html());
+        $("#div_posts").html(temp(rows));
+        if(total > size) {
+            $("#span_page").html(`${page} / ${last}`);
+            $("#span_page").show();
+            if(page==1) {
+                $("#btn_prev").attr("disabled", true);
+            }else{
+                $("#btn_prev").attr("disabled", false);
+            }
+            if(page==last) {
+                $("#btn_next").attr("disabled", true);
+            }else{
+                $("#btn_next").attr("disabled", false);
+            } 
+        }else{
+            $("#pagination").hide();
+        }
+    }
+    $("#btn_insert").on("click", function(){
+        if(sessionStorage.getItem("uid")) {
+            location.href='/posts/insert'; 
+        }else{
+            sessionStorage.setItem("target", "/posts/insert");
+            location.href="/users/login";
+        }
+    });
+    $("#btn_next").on("click", function(){
+        page++;
+        getPosts();
+    });
+    
+    $("#btn_prev").on("click", function(){
+        page--;
+        getPosts();
+    });
+</script>

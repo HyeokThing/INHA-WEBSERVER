@@ -1,0 +1,46 @@
+<div class="my-5">
+    <h1 class="text-center mb-5">글쓰기</h1>
+    <div class="row">
+        <div class="col">
+            <form name="frm" class="card p-3">
+                <input name="title" placeholder="제목을 입력하세요." class="form-control mb-2">
+                <textarea name="body" rows="10" placeholder="내용을 입력하세요." class="form-control"></textarea>
+                <div class="text-end my-3">
+                    <button class="btn btn-primary px-5">등록</button>
+                    <button class="btn btn-secondary px-5" type="reset">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script type="module">
+    import { app } from "/javascripts/firebase.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    const db = getFirestore(app);
+    $(frm).on("submit", async function(e){
+        e.preventDefault();
+        const title=$(frm.title).val();
+        const body=$(frm.body).val();
+        if(title==""){
+            alert("제목을 입력하세요.");
+            $(frm.title).focus();
+        }else if(body==""){
+            alert("내용을 입력하세요.");
+            $(frm.body).focus();
+        }else{
+            if(confirm("새로운 글을 등록하시겠습니까?")){
+                const date=moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+                const email = sessionStorage.getItem("email");
+                await addDoc(collection(db, "posts"), {
+                    email:email, 
+                    title:title, 
+                    body:body, 
+                    date:date
+                });
+                location.href="/posts";
+            }
+        }
+    });
+</script>
