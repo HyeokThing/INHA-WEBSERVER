@@ -1,10 +1,11 @@
 <div class="my-5">
     <h1 class="text-center mb-5">게시글정보</h1>
     <div id="btn-group" class="text-end mb-2" style="display: none;">
-        <button class="btn btn-success btn-sm">수정</button>
-        <button class="btn btn-danger btn-sm">삭제</button>
+        <button id="btn-update" class="btn btn-success btn-sm">수정</button>
+        <button id="btn-delete" class="btn btn-danger btn-sm">삭제</button>
     </div>
     <div id="div_post"></div>
+    <%-include('comments.ejs')%>
 </div>
 
 <script id="temp_post" type="x-handlebars-template">
@@ -23,7 +24,7 @@
 
 <script type="module">
     import { app } from "/javascripts/firebase.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
     const db=getFirestore(app);
     const id="<%=id%>";
 
@@ -37,4 +38,18 @@
     if(sessionStorage.getItem("email")==post.email){
         $("#btn-group").show();
     }
+
+    $("#btn-delete").on("click", async function(){
+        if(confirm(`${id}번 게시글을 삭제하실래요?`)){
+            //삭제
+            await deleteDoc(doc(db, `posts/${id}`));
+            alert("삭제완료");
+            location.href="/posts";
+        }
+    });
+
+
+    $("#btn-update").on("click", function(){
+        location.href=`/posts/update?id=${id}`;
+    });
 </script>
