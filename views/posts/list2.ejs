@@ -49,7 +49,8 @@
         const snapshot=await getDocs(q);
         // console.log(snapshot.docs.length);
         $("#total").html(`<b>${snapshot.docs.length}</b>`);
-
+        
+        // 전체 페이지 수 구하기
         if(total != snapshot.docs.length)
         {
             total=snapshot.docs.length;

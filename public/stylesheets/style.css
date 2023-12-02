@@ -11,3 +11,12 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
+
+/* 문장이 길때 2줄까지만 나오고 ...으로 처리 */
+.ellipsis2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
